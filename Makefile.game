@@ -1,0 +1,14 @@
+CC=gcc
+CFLAGS=-Wall -Wextra -std=c11 -O2
+
+OUT_GAME=test_game
+
+SRC_COMMON=src/data.c src/game.c src/debug.c
+
+game:
+	$(CC) $(CFLAGS) src/main_game.c $(SRC_COMMON) -o $(OUT_GAME)
+
+clean:
+	rm -f $(OUT_GAME)
+
+    

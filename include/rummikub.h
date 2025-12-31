@@ -70,8 +70,15 @@ int rack_remove_at(Rack *r, int index, Tile *out);
 int board_add_group(Board *b, const Tile *tiles, int n);
 
 /* Game */
+// ===== Module Game =====
 void game_init(Game *g, int player_count);
 void game_deal_initial(Game *g);
+void game_init(Game *g, int player_count);
+void game_deal_initial(Game *g);
+void game_next_turn(Game *g);
+int  game_is_finished(Game *g);
+void game_play_turn(Game *g);
+void game_compute_scores(Game *g);
 
 /* Debug */
 void tile_print(Tile t);
