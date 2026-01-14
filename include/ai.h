@@ -7,6 +7,11 @@
 #include "combination.h"
 
 typedef struct {
+    Combination_t combo;
+    int ai_score;
+} AIChoice;
+
+typedef struct {
     size_t player_id;
 } AIPlayer;
 
