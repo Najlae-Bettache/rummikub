@@ -187,6 +187,5 @@ int main(void) {
     test_duplicate_tile_id();
     test_too_short();
     test_mixed_series_and_run();
-    printf("All rules tests passed!\n");
     return 0;
 }

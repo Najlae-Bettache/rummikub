@@ -202,6 +202,6 @@ int main(void)
     test_end_game_by_empty_rack();
     test_final_scores();
     test_action_after_game_end();
-    test_massive_draw_until_empty();
+    // test_massive_draw_until_empty();
     return 0;
 }

@@ -18,6 +18,9 @@ BOARD_SRC   := \
 RULES_SRC   := \
     $(SRC_DIR)/rules/rules.c
 
+AI_SRC	  := \
+	$(SRC_DIR)/ai/ai.c
+
 GAME_SRC    :=\
     $(SRC_DIR)/game/game.c
 	
@@ -31,6 +34,7 @@ SRC         := \
     $(GAME_SRC) \
     $(UI_SRC) \
     $(NET_SRC) \
+	$(AI_SRC) \
     $(SRC_DIR)/main.c
 
 OBJ         := $(SRC:%.c=$(OBJ_DIR)/%.o)
@@ -42,7 +46,8 @@ TEST_SRC    := \
     $(TEST_DIR)/test_combination.c \
 	$(TEST_DIR)/test_table.c \
 	$(TEST_DIR)/test_rules.c \
-	$(TEST_DIR)/test_game.c
+	$(TEST_DIR)/test_game.c	 \
+	$(TEST_DIR)/test_ai.c
 
 TEST_BIN    := $(TEST_SRC:$(TEST_DIR)/%.c=$(OBJ_DIR)/tests/%)
 
@@ -60,10 +65,10 @@ $(OBJ_DIR)/%.o: %.c
 tests: $(TEST_BIN)
 	@echo "All tests compiled"
 
-$(OBJ_DIR)/tests/%: $(TEST_DIR)/%.c $(BOARD_SRC) $(RULES_SRC) $(GAME_SRC)
+$(OBJ_DIR)/tests/%: $(TEST_DIR)/%.c $(BOARD_SRC) $(RULES_SRC) $(GAME_SRC) $(AI_SRC)
 	@mkdir -p $(dir $@)
 	@echo "$@"
-	@$(CC) $(CFLAGS) $(INCLUDES) $< $(BOARD_SRC) $(RULES_SRC) $(GAME_SRC) -o $@
+	@$(CC) $(CFLAGS) $(INCLUDES) $< $(BOARD_SRC) $(RULES_SRC) $(GAME_SRC) $(AI_SRC) -o $@
 
 test: tests
 	@echo "Running tests"
