@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "rules.h"
+#include "../../include/rules.h"
 
 int compare(const void *a, const void *b) {
     return (*(int *)a - *(int *)b);

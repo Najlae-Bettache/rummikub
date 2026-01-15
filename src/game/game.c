@@ -1,4 +1,4 @@
-#include "../include/game.h"
+#include "../../include/game.h"
 
 bool game_init(Game_t *game, size_t nb_players)
 {

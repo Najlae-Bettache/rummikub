@@ -1,4 +1,4 @@
-#include "../include/ai.h"
+#include "../../include/ai.h"
 #include <string.h>
 #include <stdlib.h>
 

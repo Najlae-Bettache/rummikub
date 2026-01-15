@@ -1,4 +1,4 @@
-#include "../include/table.h"
+#include "../../include/table.h"
 
 void table_init(Table_t *table)
 {
