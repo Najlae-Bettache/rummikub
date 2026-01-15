@@ -1,7 +1,8 @@
 NAME        := rummikub
 CC          := gcc
 CFLAGS      := -Wall -Wextra -Werror -std=c11 -g
-INCLUDES    := -Iinclude -lcsfml-graphics -lcsfml-window -lcsfml-system
+INCLUDES    := -Iinclude
+LIBS		:= -lcsfml-graphics -lcsfml-window -lcsfml-system
 
 SRC_DIR     := src
 TEST_DIR    := tests
@@ -55,12 +56,12 @@ all: $(NAME)
 
 $(NAME): $(OBJ)
 	@echo "$(NAME)"
-	@$(CC) $(CFLAGS) $(OBJ) -o $(NAME)
+	@$(CC) $(CFLAGS) $(OBJ) -o $(NAME) $(LIBS)
 
 $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@echo "$<"
-	@$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@ $(LIBS)
 
 tests: $(TEST_BIN)
 	@echo "All tests compiled"
