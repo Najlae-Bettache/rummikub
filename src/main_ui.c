@@ -446,7 +446,7 @@ void ui_render_end(UI *ui, const Game_t *game)
     sfRenderWindow_clear(ui->window, sfColor_fromRGB(20, 20, 20));
     int winner = 0;
     int best_score = game->players[0].score;
-    for (int i = 1; i < game->player_count; i++) {
+    for (int i = 1; i < (int)game->player_count; i++) {
         if (game->players[i].score > best_score) {
             best_score = game->players[i].score;
             winner = i;
@@ -588,7 +588,7 @@ int main(void)
                 game_is_finished(&game))
             {
                 ui.state = UI_STATE_END;
-                for (int i = 0; i < game.player_count; i++) {
+                for (int i = 0; i < (int)game.player_count; i++) {
                     add_score(ui.config.player_names[i],
                             game.players[i].score);
                 }

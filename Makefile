@@ -1,7 +1,7 @@
 NAME        := rummikub
 CC          := gcc
 CFLAGS      := -Wall -Wextra -Werror -std=c11 -g
-INCLUDES    := -Iinclude
+INCLUDES    := -Iinclude -lcsfml-graphics -lcsfml-window -lcsfml-system
 
 SRC_DIR     := src
 TEST_DIR    := tests
@@ -35,7 +35,7 @@ SRC         := \
     $(UI_SRC) \
     $(NET_SRC) \
 	$(AI_SRC) \
-    $(SRC_DIR)/main.c
+    $(SRC_DIR)/main_ui.c
 
 OBJ         := $(SRC:%.c=$(OBJ_DIR)/%.o)
 

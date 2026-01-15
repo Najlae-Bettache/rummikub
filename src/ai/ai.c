@@ -143,7 +143,7 @@ void ai_find_runs(
         int count = 0;
         for (int i = 0; i < rack->count; i++) {
             if (!rack->tiles[i].is_joker &&
-                rack->tiles[i].color == color)
+                (int)rack->tiles[i].color == color)
             {
                 tiles[count++] = rack->tiles[i];
             }
