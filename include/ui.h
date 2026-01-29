@@ -4,8 +4,8 @@
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
-#define TILE_WIDTH 60.f
-#define TILE_HEIGHT 90.f
+#define TILE_WIDTH 90.f
+#define TILE_HEIGHT 110.f
 #define TILE_MARGIN 10.f
 #define UI_MAX_SELECTION 32
 #define BUTTON_WIDTH 140.f
@@ -30,6 +30,7 @@
 
 typedef enum {
     UI_STATE_MENU,
+    UI_STATE_RULE,
     UI_STATE_SETTING,
     UI_STATE_GAME,
     UI_STATE_PAUSE,
@@ -79,11 +80,19 @@ typedef struct {
     UIState state;
     sfFloatRect menu_play_bounds;
     sfFloatRect menu_quit_bounds;
+    sfFloatRect menu_rule_bounds;
     GameConfig config;
     int active_name_index;
     bool entering_name;
     sfSprite *sprite;
     sfTexture *texture;
+    sfTexture **texture_black;
+    sfTexture **texture_blue;
+    sfTexture **texture_red;
+    sfTexture **texture_yellow;
+    sfTexture *texture_joker;
+    sfTexture *texture_menu;
+    sfTexture *texture_rule;
 } UI;
 
 bool ui_init(UI *);
@@ -123,3 +132,5 @@ void ui_render_menu(UI *);
 void ui_render_pause(UI *);
 
 void ui_render_end(UI *, const Game_t *);
+
+void ui_render_rule(UI *);

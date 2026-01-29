@@ -42,7 +42,28 @@ bool ui_init(UI *ui)
     ui->config.vs_ai = true;
     ui->active_name_index = 0;
     ui->entering_name = false;
-    ui->texture = sfTexture_createFromFile("./assets/spritesheet_rummikub.png", NULL);
+    ui->texture = sfTexture_createFromFile("./assets/sprite_fond.jpg", NULL);
+    ui->texture_menu = sfTexture_createFromFile("./assets/menu.png", NULL);
+    ui->texture_black = (sfTexture **)malloc(sizeof(sfTexture *) * 14);
+    ui->texture_blue = (sfTexture **)malloc(sizeof(sfTexture *) * 14);
+    ui->texture_red = (sfTexture **)malloc(sizeof(sfTexture *) * 14);
+    ui->texture_yellow = (sfTexture **)malloc(sizeof(sfTexture *) * 14);
+    for (int i = 0; i < 13; i++) {
+        char black[256];
+        char blue[256];
+        char red[256];
+        char yellow[256];
+        snprintf(black, sizeof(black), "./assets/tuile_black_%i.png", i + 1);
+        snprintf(blue, sizeof(blue), "./assets/tuile_blue_%i.png", i + 1);
+        snprintf(red, sizeof(red), "./assets/tuile_red_%i.png", i + 1);
+        snprintf(yellow, sizeof(yellow), "./assets/tuile_yellow_%i.png", i + 1);
+        ui->texture_black[i] = sfTexture_createFromFile(black, NULL);
+        ui->texture_blue[i] = sfTexture_createFromFile(blue, NULL);
+        ui->texture_red[i] = sfTexture_createFromFile(red, NULL);
+        ui->texture_yellow[i] = sfTexture_createFromFile(yellow, NULL);
+    }
+    ui->texture_joker = sfTexture_createFromFile("./assets/tuile_joker.png", NULL);
+    ui->texture_rule = sfTexture_createFromFile("./assets/rules.png", NULL);
     if (!ui->texture) {
         printf("Erreur chargement tileset\n");
         return false;
@@ -66,6 +87,19 @@ void ui_destroy(UI *ui)
         sfRenderWindow_destroy(ui->window);
     sfSprite_destroy(ui->sprite);
     sfTexture_destroy(ui->texture);
+    for (int i = 0; i < 13; i++) {
+        sfTexture_destroy(ui->texture_black[i]);
+        sfTexture_destroy(ui->texture_blue[i]);
+        sfTexture_destroy(ui->texture_red[i]);
+        sfTexture_destroy(ui->texture_yellow[i]);
+    }
+    sfTexture_destroy(ui->texture_joker);
+    sfTexture_destroy(ui->texture_menu);
+    sfTexture_destroy(ui->texture_rule);
+    free(ui->texture_black);
+    free(ui->texture_blue);
+    free(ui->texture_red);
+    free(ui->texture_yellow);
 }
 
 bool game_current_player_is_ai(const Game_t *game)
@@ -226,37 +260,46 @@ bool ui_build_combination_from_selection(
 //     sfRectangleShape_destroy(rect);
 // }
 
-static sfIntRect ui_get_tile_rect(const Tile_t *tile)
-{
-    int row;
-    int col;
+// static sfTexture *ui_get_tile_texture(const Tile_t *tile)
+// {
+//     int row;
+//     int col;
 
-    if (tile->is_joker) {
-        row = 4;
-        col = tile->id % 2;
-    }
-    else {
-        row = tile->color;
-        col = tile->value - 1;
-    }
+//     if (tile->is_joker) {
+//         return ui->texture_joker;
+//     }
+//     else {
+//         row = tile->color;
+//         col = tile->value - 1;
+//     }
 
-    sfIntRect rect = {
-        TILE_START_X + col * TILE_STEP_X,
-        TILE_START_Y + row * TILE_STEP_Y,
-        TILE_W,
-        TILE_H
-    };
+//     sfIntRect rect = {
+//         TILE_START_X + col * TILE_STEP_X,
+//         TILE_START_Y + row * TILE_STEP_Y,
+//         TILE_W,
+//         TILE_H
+//     };
 
-    return rect;
-}
+//     return rect;
+// }
 
 
 void ui_draw_tile(UI *ui, const Tile_t *tile,
                   float x, float y, bool selected)
 {
-    sfIntRect rect = ui_get_tile_rect(tile);
+    // sfTexture *rect = ui_get_tile_texture(tile);
 
-    sfSprite_setTextureRect(ui->sprite, rect);
+    if (tile->is_joker) {
+        sfSprite_setTexture(ui->sprite, ui->texture_joker, sfTrue);
+    } else if (tile->color == TILE_BLUE) {
+        sfSprite_setTexture(ui->sprite, ui->texture_blue[tile->value - 1], sfTrue);
+    } else if (tile->color == TILE_BLACK) {
+        sfSprite_setTexture(ui->sprite, ui->texture_black[tile->value - 1], sfTrue);
+    } else if (tile->color == TILE_RED) {
+        sfSprite_setTexture(ui->sprite, ui->texture_red[tile->value - 1], sfTrue);
+    } else if (tile->color == TILE_YELLOW) {
+        sfSprite_setTexture(ui->sprite, ui->texture_yellow[tile->value - 1], sfTrue);
+    }
     sfSprite_setPosition(ui->sprite, (sfVector2f){x, y});
     if (selected)
         sfSprite_setColor(ui->sprite, sfColor_fromRGB(180, 255, 180));
@@ -350,7 +393,7 @@ sfFloatRect ui_draw_menu_button(UI *ui, const char *label, float x, float y)
     sfRectangleShape *rect = sfRectangleShape_create();
     sfRectangleShape_setSize(rect, (sfVector2f){260.f, 60.f});
     sfRectangleShape_setPosition(rect, (sfVector2f){x, y});
-    sfRectangleShape_setFillColor(rect, sfColor_fromRGB(60, 60, 60));
+    sfRectangleShape_setFillColor(rect, sfColor_fromRGB(245, 189, 7));
     sfRectangleShape_setOutlineThickness(rect, 3.f);
     sfRectangleShape_setOutlineColor(rect, sfWhite);
     sfRenderWindow_drawRectangleShape(ui->window, rect, NULL);
@@ -451,26 +494,17 @@ void ui_render_config(UI *ui)
 void ui_render_menu(UI *ui)
 {
     sfRenderWindow_clear(ui->window, sfColor_fromRGB(30, 30, 30));
-    sfText *title = sfText_create();
-    sfText_setFont(title, ui->font);
-    sfText_setCharacterSize(title, 48);
-    sfText_setFillColor(title, sfWhite);
-    sfText_setString(title, "RUMMIKUB");
-    sfFloatRect bounds = sfText_getLocalBounds(title);
-    sfText_setPosition(
-        title,
-        (sfVector2f){
-            (WINDOW_WIDTH - bounds.width) / 2.f,
-            120.f
-        }
-    );
-    sfRenderWindow_drawText(ui->window, title, NULL);
-    sfText_destroy(title);
+    sfSprite_setTexture(ui->sprite, ui->texture_menu, sfTrue);
+    sfSprite_setPosition(ui->sprite, (sfVector2f){0.0f, 0.0f});
+    sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
     float center_x = (WINDOW_WIDTH - 260.f) / 2.f;
-    sfFloatRect btn_play = ui_draw_menu_button(ui, "JOUER", center_x, 280.f);
-    sfFloatRect btn_quit = ui_draw_menu_button(ui, "QUITTER", center_x, 360.f);
+    sfFloatRect btn_play = ui_draw_menu_button(ui, "JOUER", center_x, 300.f);
+    sfFloatRect btn_regle = ui_draw_menu_button(ui, "VOIR LES REGLES", center_x, 380.f);
+    sfFloatRect btn_quit = ui_draw_menu_button(ui, "QUITTER", center_x, 460.f);
     ui->menu_play_bounds = btn_play;
+    ui->menu_rule_bounds = btn_regle;
     ui->menu_quit_bounds = btn_quit;
+    (void)btn_regle;
     sfRenderWindow_display(ui->window);
 }
 
@@ -541,6 +575,14 @@ void ui_render_end(UI *ui, const Game_t *game)
     sfRenderWindow_display(ui->window);
 }
 
+void ui_render_rule(UI *ui)
+{
+    sfRenderWindow_clear(ui->window, sfWhite);
+    sfSprite_setTexture(ui->sprite, ui->texture_rule, sfTrue);
+    sfSprite_setPosition(ui->sprite, (sfVector2f){0.0f, 0.0f});
+    sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
+}
+
 void ui_render(UI *ui, const Game_t *game)
 {
     if (ui->state == UI_STATE_MENU) {
@@ -555,13 +597,20 @@ void ui_render(UI *ui, const Game_t *game)
         ui_render_pause(ui);
         return;
     }
+    if (ui->state == UI_STATE_RULE) {
+        ui_render_rule(ui);
+        return;
+    }
     if (ui->state == UI_STATE_END) {
         ui_render_end(ui, game);
         return;
     }
     ui_update_animations(ui, 1.f / 60.f);
     if (ui->state == UI_STATE_GAME && !game_current_player_is_ai(game)) {
-        sfRenderWindow_clear(ui->window, sfBlack);
+        sfRenderWindow_clear(ui->window, sfWhite);
+        sfSprite_setTexture(ui->sprite, ui->texture, sfTrue);
+        sfSprite_setPosition(ui->sprite, (sfVector2f){0.0f, 0.0f});
+        sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
         sfText *text = sfText_create();
         sfText_setFont(text, ui->font);
         sfText_setCharacterSize(text, 24);
@@ -660,6 +709,8 @@ int main(void)
                     ui.state = UI_STATE_PAUSE;
                 else if (ui.state == UI_STATE_PAUSE)
                     ui.state = UI_STATE_GAME;
+                else if (ui.state == UI_STATE_RULE)
+                    ui.state = UI_STATE_MENU;
             }
             if (ui.state == UI_STATE_MENU &&
                 event.type == sfEvtMouseButtonPressed &&
@@ -673,6 +724,8 @@ int main(void)
                 }
                 else if (sfFloatRect_contains(&ui.menu_quit_bounds, mx, my)) {
                     sfRenderWindow_close(ui.window);
+                } else if (sfFloatRect_contains(&ui.menu_rule_bounds, mx, my)) {
+                    ui.state = UI_STATE_RULE;
                 }
             }
             if (ui.state == UI_STATE_SETTING &&
