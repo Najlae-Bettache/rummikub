@@ -514,12 +514,12 @@ void ui_render_menu(UI *ui)
 
 void ui_render_pause(UI *ui)
 {
-    sfRenderWindow_clear(ui->window, sfColor_fromRGB(30, 30, 30));
-    sfRectangleShape *overlay = sfRectangleShape_create();
-    sfRectangleShape_setSize(overlay, (sfVector2f){WINDOW_WIDTH, WINDOW_HEIGHT});
-    sfRectangleShape_setFillColor(overlay, sfColor_fromRGBA(0, 0, 0, 180));
-    sfRenderWindow_drawRectangleShape(ui->window, overlay, NULL);
-    sfRectangleShape_destroy(overlay);
+    //sfRenderWindow_clear(ui->window, sfColor_fromRGB(30, 30, 30));
+    // sfRectangleShape *overlay = sfRectangleShape_create();
+    // sfRectangleShape_setSize(overlay, (sfVector2f){WINDOW_WIDTH, WINDOW_HEIGHT});
+    // sfRectangleShape_setFillColor(overlay, sfColor_fromRGBA(0, 0, 0, 180));
+    // sfRenderWindow_drawRectangleShape(ui->window, overlay, NULL);
+    // sfRectangleShape_destroy(overlay);
     float x = (WINDOW_WIDTH - 260.f) / 2.f;
     ui->btn_resume = ui_draw_menu_button(ui, "REPRENDRE", x, 260.f);
     ui->btn_quit_menu = ui_draw_menu_button(ui, "MENU PRINCIPAL", x, 340.f);
