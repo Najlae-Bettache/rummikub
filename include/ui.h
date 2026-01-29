@@ -93,6 +93,7 @@ typedef struct {
     sfTexture *texture_joker;
     sfTexture *texture_menu;
     sfTexture *texture_rule;
+    sfTexture *texture_config;
 } UI;
 
 bool ui_init(UI *);

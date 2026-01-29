@@ -42,8 +42,9 @@ bool ui_init(UI *ui)
     ui->config.vs_ai = true;
     ui->active_name_index = 0;
     ui->entering_name = false;
-    ui->texture = sfTexture_createFromFile("./assets/sprite_fond.jpg", NULL);
+    ui->texture = sfTexture_createFromFile("./assets/fond_bois.png", NULL);
     ui->texture_menu = sfTexture_createFromFile("./assets/menu.png", NULL);
+    ui->texture_config = sfTexture_createFromFile("./assets/config.png", NULL);
     ui->texture_black = (sfTexture **)malloc(sizeof(sfTexture *) * 14);
     ui->texture_blue = (sfTexture **)malloc(sizeof(sfTexture *) * 14);
     ui->texture_red = (sfTexture **)malloc(sizeof(sfTexture *) * 14);
@@ -439,6 +440,9 @@ void ui_update_animations(UI *ui, float dt)
 void ui_render_config(UI *ui)
 {
     sfRenderWindow_clear(ui->window, sfColor_fromRGB(25, 25, 25));
+    sfSprite_setTexture(ui->sprite, ui->texture_config, sfTrue);
+    sfSprite_setPosition(ui->sprite, (sfVector2f){0.0f, 0.0f});
+    sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
     sfText *title = sfText_create();
     sfText_setFont(title, ui->font);
     sfText_setCharacterSize(title, 40);
@@ -614,7 +618,7 @@ void ui_render(UI *ui, const Game_t *game)
         sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
         sfText *text = sfText_create();
         sfText_setFont(text, ui->font);
-        sfText_setCharacterSize(text, 24);
+        sfText_setCharacterSize(text, 30);
         sfText_setFillColor(text, sfWhite);
         char buffer[128];
         snprintf(
