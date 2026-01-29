@@ -581,6 +581,7 @@ void ui_render_rule(UI *ui)
     sfSprite_setTexture(ui->sprite, ui->texture_rule, sfTrue);
     sfSprite_setPosition(ui->sprite, (sfVector2f){0.0f, 0.0f});
     sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
+    sfRenderWindow_display(ui->window);
 }
 
 void ui_render(UI *ui, const Game_t *game)
