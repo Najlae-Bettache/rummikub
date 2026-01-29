@@ -42,6 +42,14 @@ bool ui_init(UI *ui)
     ui->config.vs_ai = true;
     ui->active_name_index = 0;
     ui->entering_name = false;
+    ui->texture = sfTexture_createFromFile("./assets/spritesheet_rummikub.png", NULL);
+    if (!ui->texture) {
+        printf("Erreur chargement tileset\n");
+        return false;
+    }
+
+    ui->sprite = sfSprite_create();
+    sfSprite_setTexture(ui->sprite, ui->texture, sfTrue);
     for (int i = 0; i < MAX_PLAYERS; i++)
         strcpy(ui->config.player_names[i], "Joueur");
     sfRenderWindow_setFramerateLimit(ui->window, 60);
@@ -52,12 +60,12 @@ void ui_destroy(UI *ui)
 {
     if (!ui)
         return;
-
     if (ui->font)
         sfFont_destroy(ui->font);
-
     if (ui->window)
         sfRenderWindow_destroy(ui->window);
+    sfSprite_destroy(ui->sprite);
+    sfTexture_destroy(ui->texture);
 }
 
 bool game_current_player_is_ai(const Game_t *game)
@@ -190,32 +198,71 @@ bool ui_build_combination_from_selection(
 }
 
 
-void ui_draw_tile(UI *ui, const Tile_t *tile, float x, float y, bool selected)
+// void ui_draw_tile(UI *ui, const Tile_t *tile, float x, float y, bool selected)
+// {
+//     sfRectangleShape *rect = sfRectangleShape_create();
+//     sfRectangleShape_setSize(rect, (sfVector2f){TILE_WIDTH, TILE_HEIGHT});
+//     sfRectangleShape_setPosition(rect, (sfVector2f){x, y});
+//     sfColor fill = ui_color_from_tile(tile);
+//     sfRectangleShape_setFillColor(rect, fill);
+//     sfRectangleShape_setOutlineThickness(rect, 2.f);
+//     sfRectangleShape_setOutlineColor(rect, selected ? sfYellow : sfBlack);
+//     sfRenderWindow_drawRectangleShape(ui->window, rect, NULL);
+//     sfText *text = sfText_create();
+//     sfText_setFont(text, ui->font);
+//     sfText_setCharacterSize(text, 18);
+//     sfText_setFillColor(text, ui_text_color_for_tile(tile));
+
+//     char buffer[16];
+//     if (tile->is_joker)
+//         snprintf(buffer, sizeof(buffer), "J");
+//     else
+//         snprintf(buffer, sizeof(buffer), "%d", tile->value);
+
+//     sfText_setString(text, buffer);
+//     sfText_setPosition(text, (sfVector2f){x + 20.f, y + 35.f});
+//     sfRenderWindow_drawText(ui->window, text, NULL);
+//     sfText_destroy(text);
+//     sfRectangleShape_destroy(rect);
+// }
+
+static sfIntRect ui_get_tile_rect(const Tile_t *tile)
 {
-    sfRectangleShape *rect = sfRectangleShape_create();
-    sfRectangleShape_setSize(rect, (sfVector2f){TILE_WIDTH, TILE_HEIGHT});
-    sfRectangleShape_setPosition(rect, (sfVector2f){x, y});
-    sfColor fill = ui_color_from_tile(tile);
-    sfRectangleShape_setFillColor(rect, fill);
-    sfRectangleShape_setOutlineThickness(rect, 2.f);
-    sfRectangleShape_setOutlineColor(rect, selected ? sfYellow : sfBlack);
-    sfRenderWindow_drawRectangleShape(ui->window, rect, NULL);
-    sfText *text = sfText_create();
-    sfText_setFont(text, ui->font);
-    sfText_setCharacterSize(text, 18);
-    sfText_setFillColor(text, ui_text_color_for_tile(tile));
+    int row;
+    int col;
 
-    char buffer[16];
-    if (tile->is_joker)
-        snprintf(buffer, sizeof(buffer), "J");
+    if (tile->is_joker) {
+        row = 4;
+        col = tile->id % 2;
+    }
+    else {
+        row = tile->color;
+        col = tile->value - 1;
+    }
+
+    sfIntRect rect = {
+        TILE_START_X + col * TILE_STEP_X,
+        TILE_START_Y + row * TILE_STEP_Y,
+        TILE_W,
+        TILE_H
+    };
+
+    return rect;
+}
+
+
+void ui_draw_tile(UI *ui, const Tile_t *tile,
+                  float x, float y, bool selected)
+{
+    sfIntRect rect = ui_get_tile_rect(tile);
+
+    sfSprite_setTextureRect(ui->sprite, rect);
+    sfSprite_setPosition(ui->sprite, (sfVector2f){x, y});
+    if (selected)
+        sfSprite_setColor(ui->sprite, sfColor_fromRGB(180, 255, 180));
     else
-        snprintf(buffer, sizeof(buffer), "%d", tile->value);
-
-    sfText_setString(text, buffer);
-    sfText_setPosition(text, (sfVector2f){x + 20.f, y + 35.f});
-    sfRenderWindow_drawText(ui->window, text, NULL);
-    sfText_destroy(text);
-    sfRectangleShape_destroy(rect);
+        sfSprite_setColor(ui->sprite, sfWhite);
+    sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
 }
 
 void ui_draw_rack(UI *ui, const Game_t *game)
@@ -514,7 +561,7 @@ void ui_render(UI *ui, const Game_t *game)
     }
     ui_update_animations(ui, 1.f / 60.f);
     if (ui->state == UI_STATE_GAME && !game_current_player_is_ai(game)) {
-        sfRenderWindow_clear(ui->window, sfGreen);
+        sfRenderWindow_clear(ui->window, sfBlack);
         sfText *text = sfText_create();
         sfText_setFont(text, ui->font);
         sfText_setCharacterSize(text, 24);

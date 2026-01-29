@@ -21,6 +21,12 @@
 #define MAX_PLAYERS 4
 #define NAME_MAX_LEN 32
 #define MAX_SCORES 64
+#define TILE_W 110
+#define TILE_H 170
+#define TILE_STEP_X 118
+#define TILE_STEP_Y 184
+#define TILE_START_X 10
+#define TILE_START_Y 12
 
 typedef enum {
     UI_STATE_MENU,
@@ -76,6 +82,8 @@ typedef struct {
     GameConfig config;
     int active_name_index;
     bool entering_name;
+    sfSprite *sprite;
+    sfTexture *texture;
 } UI;
 
 bool ui_init(UI *);
