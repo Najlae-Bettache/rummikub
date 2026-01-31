@@ -2,7 +2,7 @@ NAME        := rummikub
 CC          := gcc
 CFLAGS      := -Wall -Wextra -Werror -std=c11 -g
 INCLUDES    := -Iinclude
-LIBS		:= -lcsfml-graphics -lcsfml-window -lcsfml-system
+LIBS		:= -lcsfml-graphics -lcsfml-window -lcsfml-system -lm
 
 SRC_DIR     := src
 TEST_DIR    := tests

@@ -7,9 +7,21 @@
 #include "../include/ui.h"
 #include "../include/game.h"
 #include "../include/ai.h"
+#include <math.h>
 
 static ScoreEntry g_scores[MAX_SCORES];
 static int g_score_count = 0;
+
+static bool ui_is_table_tile_selected(UI *ui, int combo_i, int tile_i)
+{
+    for (int i = 0; i < ui->selected_count; i++) {
+        if (ui->selected_tiles[i].from_table &&
+            ui->selected_tiles[i].combo_i == combo_i &&
+            ui->selected_tiles[i].tile_i  == tile_i)
+            return true;
+    }
+    return false;
+}
 
 bool ui_init(UI *ui)
 {
@@ -232,64 +244,9 @@ bool ui_build_combination_from_selection(
     return true;
 }
 
-
-// void ui_draw_tile(UI *ui, const Tile_t *tile, float x, float y, bool selected)
-// {
-//     sfRectangleShape *rect = sfRectangleShape_create();
-//     sfRectangleShape_setSize(rect, (sfVector2f){TILE_WIDTH, TILE_HEIGHT});
-//     sfRectangleShape_setPosition(rect, (sfVector2f){x, y});
-//     sfColor fill = ui_color_from_tile(tile);
-//     sfRectangleShape_setFillColor(rect, fill);
-//     sfRectangleShape_setOutlineThickness(rect, 2.f);
-//     sfRectangleShape_setOutlineColor(rect, selected ? sfYellow : sfBlack);
-//     sfRenderWindow_drawRectangleShape(ui->window, rect, NULL);
-//     sfText *text = sfText_create();
-//     sfText_setFont(text, ui->font);
-//     sfText_setCharacterSize(text, 18);
-//     sfText_setFillColor(text, ui_text_color_for_tile(tile));
-
-//     char buffer[16];
-//     if (tile->is_joker)
-//         snprintf(buffer, sizeof(buffer), "J");
-//     else
-//         snprintf(buffer, sizeof(buffer), "%d", tile->value);
-
-//     sfText_setString(text, buffer);
-//     sfText_setPosition(text, (sfVector2f){x + 20.f, y + 35.f});
-//     sfRenderWindow_drawText(ui->window, text, NULL);
-//     sfText_destroy(text);
-//     sfRectangleShape_destroy(rect);
-// }
-
-// static sfTexture *ui_get_tile_texture(const Tile_t *tile)
-// {
-//     int row;
-//     int col;
-
-//     if (tile->is_joker) {
-//         return ui->texture_joker;
-//     }
-//     else {
-//         row = tile->color;
-//         col = tile->value - 1;
-//     }
-
-//     sfIntRect rect = {
-//         TILE_START_X + col * TILE_STEP_X,
-//         TILE_START_Y + row * TILE_STEP_Y,
-//         TILE_W,
-//         TILE_H
-//     };
-
-//     return rect;
-// }
-
-
 void ui_draw_tile(UI *ui, const Tile_t *tile,
                   float x, float y, bool selected)
 {
-    // sfTexture *rect = ui_get_tile_texture(tile);
-
     if (tile->is_joker) {
         sfSprite_setTexture(ui->sprite, ui->texture_joker, sfTrue);
     } else if (tile->color == TILE_BLUE) {
@@ -345,18 +302,14 @@ void ui_draw_table(UI *ui, const Game_t *game)
         const Combination_t *combo = &table->combinations[i];
         float y =
             TABLE_START_Y +
-            i * (TILE_HEIGHT + TABLE_ROW_GAP);
+            i * (TILE_HEIGHT + TABLE_ROW_GAP) - ui->table_scroll_y;
         for (size_t j = 0; j < combo->count; j++) {
             float x =
                 TABLE_START_X +
                 j * (TILE_WIDTH + TILE_MARGIN);
-            ui_draw_tile(
-                ui,
-                &combo->tiles[j],
-                x,
-                y,
-                false 
-            );
+            bool selected =
+                ui_is_table_tile_selected(ui, i, j);
+            ui_draw_tile(ui, &combo->tiles[j], x, y, selected);
         }
     }
 }
@@ -514,12 +467,6 @@ void ui_render_menu(UI *ui)
 
 void ui_render_pause(UI *ui)
 {
-    //sfRenderWindow_clear(ui->window, sfColor_fromRGB(30, 30, 30));
-    // sfRectangleShape *overlay = sfRectangleShape_create();
-    // sfRectangleShape_setSize(overlay, (sfVector2f){WINDOW_WIDTH, WINDOW_HEIGHT});
-    // sfRectangleShape_setFillColor(overlay, sfColor_fromRGBA(0, 0, 0, 180));
-    // sfRenderWindow_drawRectangleShape(ui->window, overlay, NULL);
-    // sfRectangleShape_destroy(overlay);
     float x = (WINDOW_WIDTH - 260.f) / 2.f;
     ui->btn_resume = ui_draw_menu_button(ui, "REPRENDRE", x, 260.f);
     ui->btn_quit_menu = ui_draw_menu_button(ui, "MENU PRINCIPAL", x, 340.f);
@@ -657,6 +604,23 @@ void ui_render(UI *ui, const Game_t *game)
     }
 }
 
+static int ui_find_selected(UI *ui, int rack_index)
+{
+    for (int i = 0; i < ui->selected_count; i++)
+        if (ui->selected_indices[i] == rack_index)
+            return i;
+    return -1;
+}
+
+static void ui_remove_selected(UI *ui, int idx)
+{
+    for (int i = idx; i < ui->selected_count - 1; i++) {
+        ui->selected_indices[i] = ui->selected_indices[i+1];
+        ui->selected_tiles[i]   = ui->selected_tiles[i+1];
+    }
+    ui->selected_count--;
+}
+
 int main(void)
 {
     Game_t game;
@@ -682,7 +646,22 @@ int main(void)
                 if (event.mouseWheelScroll.wheel == sfMouseHorizontalWheel ||
                     event.mouseWheelScroll.wheel == sfMouseVerticalWheel)
                 {
-                    ui.rack_scroll_x -= event.mouseWheelScroll.delta * 40.f;
+                    float my = event.mouseWheelScroll.y;
+                    float delta = event.mouseWheelScroll.delta * 40.f;
+                    if (my > WINDOW_HEIGHT - TILE_HEIGHT - 60.f)
+                    {
+                        ui.rack_scroll_x -= delta;
+                    }
+                    else if (my >= TABLE_VIEW_Y && my <= TABLE_VIEW_Y + TABLE_VIEW_HEIGHT)
+                    {
+                        ui.table_scroll_y -= delta;
+                    }
+                    float table_height = game.table.count * (TILE_HEIGHT + 20.f);
+                    float max_scroll = fmaxf(0.f, table_height - TABLE_VIEW_HEIGHT);
+                    if (ui.table_scroll_y < 0)
+                        ui.table_scroll_y = 0;
+                    if (ui.table_scroll_y > max_scroll)
+                        ui.table_scroll_y = max_scroll;
                 }
             }
             if (ui.state == UI_STATE_GAME &&
@@ -693,6 +672,7 @@ int main(void)
                     add_score(ui.config.player_names[i],
                             game.players[i].score);
                 }
+                game_compute_final_scores(&game);
                 save_scores();
             }
             if (ui.state == UI_STATE_END &&
@@ -791,8 +771,53 @@ int main(void)
                     if (mouse_x >= x && mouse_x <= x + TILE_WIDTH &&
                         mouse_y >= y && mouse_y <= y + TILE_HEIGHT)
                     {
-                        ui_toggle_tile_selection(&ui, i);
+                        int pos = ui_find_selected(&ui, i);
+                        if (pos >= 0) {
+                            ui_remove_selected(&ui, pos);
+                        }
+                        else {
+                            ui.selected_indices[ui.selected_count] = i;
+                            ui.selected_tiles[ui.selected_count++] =
+                                (SelectedTile){
+                                    .tile = rack->tiles[i],
+                                    .from_table = false
+                                };
+                        }
                         break;
+                    }
+                }
+                float table_start_y = 100.f;
+                for (size_t c = 0; c < game.table.count; c++) {
+                    Combination_t *combo = &game.table.combinations[c];
+                    float y = table_start_y + c * (TILE_HEIGHT + 20.f) - ui.table_scroll_y;
+                    for (size_t t = 0; t < combo->count; t++) {
+                        float x = 50.f + t * (TILE_WIDTH + 5.f);
+                        if (mouse_x >= x && mouse_x <= x + TILE_WIDTH &&
+                            mouse_y >= y && mouse_y <= y + TILE_HEIGHT)
+                        {
+                            bool found = false;
+                            for (int s = 0; s < ui.selected_count; s++) {
+                                if (ui.selected_tiles[s].from_table &&
+                                    ui.selected_tiles[s].combo_i == (int)c &&
+                                    ui.selected_tiles[s].tile_i  == (int)t)
+                                {
+                                    ui_remove_selected(&ui, s);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                ui.selected_indices[ui.selected_count] = -1;
+                                ui.selected_tiles[ui.selected_count++] =
+                                    (SelectedTile){
+                                        .tile = combo->tiles[t],
+                                        .from_table = true,
+                                        .combo_i = c,
+                                        .tile_i = t
+                                    };
+                            }
+                            break;
+                        }
                     }
                 }
             }
@@ -826,34 +851,32 @@ int main(void)
                         ui.active_name_index = i;
                         ui.entering_name = true;
                     }
-                if (sfFloatRect_contains(&ui.btn_play, mx, my)) {
+                if (sfFloatRect_contains(&ui.btn_play, mx, my))
+                {
                     Combination_t combo;
                     combination_init(&combo);
-                    if (ui_build_combination_from_selection(&ui, &game, &combo)) {
-                        if (game_action_play_combination(&game, &combo)) {
-                            for (int i = 0; i < ui.selected_count; i++) {
-                                int index = ui.selected_indices[i];
-                                Tile_t tile = game.players[game.current_player].rack.tiles[index];
-                                TileAnimation *anim =
-                                    &ui.animations[ui.animation_count++];
-                                anim->tile = tile;
-                                anim->start = (sfVector2f){
-                                    RACK_VIEW_X +
-                                    index * (TILE_WIDTH + TILE_MARGIN) -
-                                    ui.rack_scroll_x,
-                                    RACK_VIEW_Y
-                                };
-                                anim->end = (sfVector2f){
-                                    200.f + i * (TILE_WIDTH + TILE_MARGIN),
-                                    200.f
-                                };
-                                anim->now = anim->start;
-                                anim->duration = 0.3f;
-                                anim->elapsed = 0.f;
-                            }
-                            ui.selected_count = 0;
+                    for (int i = 0; i < ui.selected_count; i++)
+                        combination_add_tile(&combo, ui.selected_tiles[i].tile);
+                    RulesResult r = rules_validate_combination(&combo);
+                    if (!r.valid) {
+                        continue;
+                    }
+                    GamePlayer_t *player = &game.players[game.current_player];
+                    for (int i = 0; i < ui.selected_count; i++) {
+                        if (ui.selected_tiles[i].from_table) {
+                            Combination_t *c = &game.table.combinations[ui.selected_tiles[i].combo_i];
+                            combination_remove_tile_at(c, ui.selected_tiles[i].tile_i);
+                            if (c->count == 0)
+                                table_remove_combination(&game.table, ui.selected_tiles[i].combo_i);
+                        }
+                        else {
+                            rack_remove_tile_by_id(&player->rack, ui.selected_tiles[i].tile.id);
                         }
                     }
+                    table_add_combination(&game.table, &combo);
+                    game_next_turn(&game);
+                    ui.selected_count = 0;
+                    continue;
                 }
                 else if (sfFloatRect_contains(&ui.btn_draw, mx, my)) {
                     if (game_action_draw(&game)) {

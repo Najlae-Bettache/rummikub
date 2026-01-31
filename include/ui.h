@@ -27,6 +27,8 @@
 #define TILE_STEP_Y 184
 #define TILE_START_X 10
 #define TILE_START_Y 12
+#define TABLE_VIEW_Y      80.f
+#define TABLE_VIEW_HEIGHT 420.f
 
 typedef enum {
     UI_STATE_MENU,
@@ -58,6 +60,13 @@ typedef struct {
 } GameConfig;
 
 typedef struct {
+    Tile_t tile;
+    bool from_table;
+    int combo_i;
+    int tile_i;
+} SelectedTile;
+
+typedef struct {
     sfRenderWindow *window;
     sfFont *font;
     sfFloatRect btn_play;
@@ -75,6 +84,7 @@ typedef struct {
     int selected_indices[UI_MAX_SELECTION];
     int selected_count;
     float rack_scroll_x;
+    float table_scroll_y;
     TileAnimation animations[UI_MAX_ANIMATIONS];
     int animation_count;
     UIState state;
@@ -94,7 +104,9 @@ typedef struct {
     sfTexture *texture_menu;
     sfTexture *texture_rule;
     sfTexture *texture_config;
+    SelectedTile selected_tiles[64];
 } UI;
+
 
 bool ui_init(UI *);
 

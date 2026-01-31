@@ -152,11 +152,22 @@ bool game_is_finished(const Game_t *game)
     return game && game->state == GAME_STATE_END;
 }
 
+int rack_compute_penalty(const Rack_t *rack)
+{
+    int sum = 0;
+    for (int i = 0; i < rack->count; i++) {
+        if (rack->tiles[i].is_joker)
+            sum += 30;
+        else
+            sum += rack->tiles[i].value;
+    }
+    return sum;
+}
+
 void game_compute_final_scores(Game_t *game)
 {
-    if (!game)
-        return;
     int winner = -1;
+
     for (size_t i = 0; i < game->player_count; i++) {
         if (rack_is_empty(&game->players[i].rack)) {
             winner = i;
@@ -165,17 +176,13 @@ void game_compute_final_scores(Game_t *game)
     }
     if (winner == -1)
         return;
-    int gain = 0;
+    int winner_score = 0;
     for (size_t i = 0; i < game->player_count; i++) {
         if (i == (size_t)winner)
             continue;
-        int penalty = 0;
-        for (int j = 0; j < game->players[i].rack.count; j++) {
-            Tile_t t = game->players[i].rack.tiles[j];
-            penalty += t.is_joker ? 30 : t.value;
-        }
-        game->players[i].score -= penalty;
-        gain += penalty;
+        int penalty = rack_compute_penalty(&game->players[i].rack);
+        game->players[i].score = -penalty;
+        winner_score += penalty;
     }
-    game->players[winner].score += gain;
+    game->players[winner].score = winner_score;
 }
