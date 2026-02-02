@@ -8,7 +8,9 @@ SRC_DIR     := src
 TEST_DIR    := tests
 OBJ_DIR     := build
 
-CORE_SRC    :=
+SAVE_SRC    := \
+	$(SRC_DIR)/save/save.c
+
 BOARD_SRC   := \
     $(SRC_DIR)/board/tile.c \
     $(SRC_DIR)/board/deck.c \
@@ -29,7 +31,7 @@ UI_SRC      :=
 NET_SRC     :=
 
 SRC         := \
-    $(CORE_SRC) \
+    $(SAVE_SRC) \
     $(BOARD_SRC) \
     $(RULES_SRC) \
     $(GAME_SRC) \
@@ -66,10 +68,10 @@ $(OBJ_DIR)/%.o: %.c
 tests: $(TEST_BIN)
 	@echo "All tests compiled"
 
-$(OBJ_DIR)/tests/%: $(TEST_DIR)/%.c $(BOARD_SRC) $(RULES_SRC) $(GAME_SRC) $(AI_SRC)
+$(OBJ_DIR)/tests/%: $(TEST_DIR)/%.c $(BOARD_SRC) $(RULES_SRC) $(GAME_SRC) $(AI_SRC) $(SAVE_SRC)
 	@mkdir -p $(dir $@)
 	@echo "$@"
-	@$(CC) $(CFLAGS) $(INCLUDES) $< $(BOARD_SRC) $(RULES_SRC) $(GAME_SRC) $(AI_SRC) -o $@
+	@$(CC) $(CFLAGS) $(INCLUDES) $< $(BOARD_SRC) $(RULES_SRC) $(GAME_SRC) $(AI_SRC) $(SAVE_SRC) -o $@
 
 test: tests
 	@echo "Running tests"

@@ -36,6 +36,7 @@ typedef enum {
     UI_STATE_SETTING,
     UI_STATE_GAME,
     UI_STATE_PAUSE,
+    UI_STATE_SCORES,
     UI_STATE_END
 } UIState;
 
@@ -91,6 +92,7 @@ typedef struct {
     sfFloatRect menu_play_bounds;
     sfFloatRect menu_quit_bounds;
     sfFloatRect menu_rule_bounds;
+    sfFloatRect menu_score_bounds;
     GameConfig config;
     int active_name_index;
     bool entering_name;
@@ -147,3 +149,5 @@ void ui_render_pause(UI *);
 void ui_render_end(UI *, const Game_t *);
 
 void ui_render_rule(UI *);
+
+void ui_render_scores(UI *);

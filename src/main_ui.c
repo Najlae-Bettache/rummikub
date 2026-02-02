@@ -7,6 +7,7 @@
 #include "../include/ui.h"
 #include "../include/game.h"
 #include "../include/ai.h"
+#include "../include/save.h"
 #include <math.h>
 
 static ScoreEntry g_scores[MAX_SCORES];
@@ -455,13 +456,14 @@ void ui_render_menu(UI *ui)
     sfSprite_setPosition(ui->sprite, (sfVector2f){0.0f, 0.0f});
     sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
     float center_x = (WINDOW_WIDTH - 260.f) / 2.f;
-    sfFloatRect btn_play = ui_draw_menu_button(ui, "JOUER", center_x, 300.f);
-    sfFloatRect btn_regle = ui_draw_menu_button(ui, "VOIR LES REGLES", center_x, 380.f);
-    sfFloatRect btn_quit = ui_draw_menu_button(ui, "QUITTER", center_x, 460.f);
+    sfFloatRect btn_play = ui_draw_menu_button(ui, "JOUER", center_x, 280.f);
+    sfFloatRect btn_score = ui_draw_menu_button(ui, "HISTORIQUE SCORE", center_x, 360.f);
+    sfFloatRect btn_regle = ui_draw_menu_button(ui, "VOIR LES REGLES", center_x, 440.f);
+    sfFloatRect btn_quit = ui_draw_menu_button(ui, "QUITTER", center_x, 520.f);
     ui->menu_play_bounds = btn_play;
+    ui->menu_score_bounds = btn_score;
     ui->menu_rule_bounds = btn_regle;
     ui->menu_quit_bounds = btn_quit;
-    (void)btn_regle;
     sfRenderWindow_display(ui->window);
 }
 
@@ -553,6 +555,10 @@ void ui_render(UI *ui, const Game_t *game)
         ui_render_rule(ui);
         return;
     }
+    if (ui->state == UI_STATE_SCORES) {
+        ui_render_scores(ui);
+        return;
+    }
     if (ui->state == UI_STATE_END) {
         ui_render_end(ui, game);
         return;
@@ -621,6 +627,80 @@ static void ui_remove_selected(UI *ui, int idx)
     ui->selected_count--;
 }
 
+void ui_render_scores(UI *ui)
+{
+    sfRenderWindow_clear(ui->window, sfColor_fromRGB(25,25,25));
+
+    sfSprite_setTexture(ui->sprite, ui->texture_config, sfTrue);
+    sfSprite_setPosition(ui->sprite, (sfVector2f){0,0});
+    sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
+    sfText *title = sfText_create();
+    sfText_setFont(title, ui->font);
+    sfText_setCharacterSize(title, 40);
+    sfText_setFillColor(title, sfWhite);
+    sfText_setString(title, "Historique des scores");
+    sfFloatRect tb = sfText_getLocalBounds(title);
+    sfText_setPosition(title, (sfVector2f){(WINDOW_WIDTH - tb.width)/2.f, 60});
+    sfRenderWindow_drawText(ui->window, title, NULL);
+    sfText_destroy(title);
+
+    float x = 120.f;
+    float y = 160.f;
+    float line_space = 40.f;
+
+    int count = score_get_count();
+
+    for (int g = 0; g < count && g < 10; g++)
+    {
+        const ScoreGame *sg = score_get(g);
+
+        char buffer[256] = {0};
+
+        snprintf(buffer, sizeof(buffer), "Partie %d :", g+1);
+
+        sfText *line = sfText_create();
+        sfText_setFont(line, ui->font);
+        sfText_setCharacterSize(line, 22);
+        sfText_setFillColor(line, sfWhite);
+        sfText_setString(line, buffer);
+        sfText_setPosition(line, (sfVector2f){x, y});
+        sfRenderWindow_drawText(ui->window, line, NULL);
+        sfText_destroy(line);
+
+        y += line_space;
+
+        for (int p = 0; p < sg->player_count; p++)
+        {
+            snprintf(buffer, sizeof(buffer),
+                     "   %s : %d",
+                     sg->players[p].name,
+                     sg->players[p].score);
+
+            sfText *t = sfText_create();
+            sfText_setFont(t, ui->font);
+            sfText_setCharacterSize(t, 20);
+            sfText_setFillColor(t, sfWhite);
+            sfText_setString(t, buffer);
+            sfText_setPosition(t, (sfVector2f){x+40, y});
+            sfRenderWindow_drawText(ui->window, t, NULL);
+            sfText_destroy(t);
+
+            y += line_space;
+        }
+
+        y += 10.f;
+    }
+
+    ui->btn_back = ui_draw_menu_button(
+        ui,
+        "RETOUR",
+        (WINDOW_WIDTH - 260)/2.f,
+        WINDOW_HEIGHT - 120
+    );
+
+    sfRenderWindow_display(ui->window);
+}
+
 int main(void)
 {
     Game_t game;
@@ -635,7 +715,7 @@ int main(void)
         printf("Erreur initialisation UI\n");
         return 1;
     }
-    load_scores();
+    score_load_history();
 
     while (sfRenderWindow_isOpen(ui.window)) {
         sfEvent event;
@@ -668,12 +748,10 @@ int main(void)
                 game_is_finished(&game))
             {
                 ui.state = UI_STATE_END;
-                for (int i = 0; i < (int)game.player_count; i++) {
-                    add_score(ui.config.player_names[i],
-                            game.players[i].score);
-                }
-                game_compute_final_scores(&game);
-                save_scores();
+                const char *names[MAX_PLAYERS];
+                for (int i = 0; i < (int)game.player_count; i++)
+                    names[i] = ui.config.player_names[i];
+                score_add_game(&game, names);
             }
             if (ui.state == UI_STATE_END &&
                 event.type == sfEvtMouseButtonPressed)
@@ -696,6 +774,8 @@ int main(void)
                     ui.state = UI_STATE_GAME;
                 else if (ui.state == UI_STATE_RULE)
                     ui.state = UI_STATE_MENU;
+                else if (ui.state == UI_STATE_SCORES)
+                    ui.state = UI_STATE_MENU;
             }
             if (ui.state == UI_STATE_MENU &&
                 event.type == sfEvtMouseButtonPressed &&
@@ -706,8 +786,7 @@ int main(void)
 
                 if (sfFloatRect_contains(&ui.menu_play_bounds, mx, my)) {
                     ui.state = UI_STATE_SETTING;
-                }
-                else if (sfFloatRect_contains(&ui.menu_quit_bounds, mx, my)) {
+                } else if (sfFloatRect_contains(&ui.menu_quit_bounds, mx, my)) {
                     sfRenderWindow_close(ui.window);
                 } else if (sfFloatRect_contains(&ui.menu_rule_bounds, mx, my)) {
                     ui.state = UI_STATE_RULE;
@@ -761,29 +840,35 @@ int main(void)
             {
                 float mouse_x = event.mouseButton.x;
                 float mouse_y = event.mouseButton.y;
-                const Rack_t *rack = &game.players[game.current_player].rack;
-                float y = WINDOW_HEIGHT - TILE_HEIGHT - 20.f;
-                for (int i = 0; i < rack->count; i++) {
-                    float x =
-                        RACK_VIEW_X +
-                        i * (TILE_WIDTH + TILE_MARGIN) -
-                        ui.rack_scroll_x;
-                    if (mouse_x >= x && mouse_x <= x + TILE_WIDTH &&
-                        mouse_y >= y && mouse_y <= y + TILE_HEIGHT)
-                    {
-                        int pos = ui_find_selected(&ui, i);
-                        if (pos >= 0) {
-                            ui_remove_selected(&ui, pos);
+                if (mouse_x >= WINDOW_WIDTH - BUTTON_WIDTH - 40.f)
+                {
+                }
+                else
+                {
+                    const Rack_t *rack = &game.players[game.current_player].rack;
+                    float y = WINDOW_HEIGHT - TILE_HEIGHT - 20.f;
+                    for (int i = 0; i < rack->count; i++) {
+                        float x =
+                            RACK_VIEW_X +
+                            i * (TILE_WIDTH + TILE_MARGIN) -
+                            ui.rack_scroll_x;
+                        if (mouse_x >= x && mouse_x <= x + TILE_WIDTH &&
+                            mouse_y >= y && mouse_y <= y + TILE_HEIGHT)
+                        {
+                            int pos = ui_find_selected(&ui, i);
+                            if (pos >= 0) {
+                                ui_remove_selected(&ui, pos);
+                            }
+                            else {
+                                ui.selected_indices[ui.selected_count] = i;
+                                ui.selected_tiles[ui.selected_count++] =
+                                    (SelectedTile){
+                                        .tile = rack->tiles[i],
+                                        .from_table = false
+                                    };
+                            }
+                            break;
                         }
-                        else {
-                            ui.selected_indices[ui.selected_count] = i;
-                            ui.selected_tiles[ui.selected_count++] =
-                                (SelectedTile){
-                                    .tile = rack->tiles[i],
-                                    .from_table = false
-                                };
-                        }
-                        break;
                     }
                 }
                 float table_start_y = 100.f;
