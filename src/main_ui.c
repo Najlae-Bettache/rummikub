@@ -474,53 +474,69 @@ void ui_render_pause(UI *ui)
 void ui_render_end(UI *ui, const Game_t *game)
 {
     sfRenderWindow_clear(ui->window, sfColor_fromRGB(20, 20, 20));
+    sfSprite_setTexture(ui->sprite, ui->texture_config, sfTrue);
+    sfSprite_setPosition(ui->sprite, (sfVector2f){0, 0});
+    sfRenderWindow_drawSprite(ui->window, ui->sprite, NULL);
+    sfText *title = sfText_create();
+    sfText_setFont(title, ui->font);
+    sfText_setCharacterSize(title, 42);
+    sfText_setFillColor(title, sfWhite);
+    sfText_setString(title, "Fin de partie");
+    sfFloatRect tb = sfText_getLocalBounds(title);
+    sfText_setPosition(title,
+        (sfVector2f){(WINDOW_WIDTH - tb.width) / 2.f, 70.f});
+    sfRenderWindow_drawText(ui->window, title, NULL);
+    sfText_destroy(title);
     int winner = 0;
     int best_score = game->players[0].score;
-    for (int i = 1; i < (int)game->player_count; i++) {
-        if (game->players[i].score > best_score) {
+    for (int i = 1; i < (int)game->player_count; i++)
+    {
+        if (game->players[i].score > best_score)
+        {
             best_score = game->players[i].score;
             winner = i;
         }
     }
-    char title_text[128];
-    snprintf(
-        title_text,
-        sizeof(title_text),
-        "Victoire de %s !",
-        ui->config.player_names[winner]
-    );
-    sfText *title = sfText_create();
-    sfText_setFont(title, ui->font);
-    sfText_setCharacterSize(title, 44);
-    sfText_setFillColor(title, sfWhite);
-    sfText_setString(title, title_text);
-    sfFloatRect tb = sfText_getLocalBounds(title);
-    sfText_setPosition(
-        title,
-        (sfVector2f){(WINDOW_WIDTH - tb.width) / 2.f, 120.f}
-    );
-    sfRenderWindow_drawText(ui->window, title, NULL);
-    sfText_destroy(title);
-    char score_text[64];
-    snprintf(score_text, sizeof(score_text),
-             "Score final : %d points", best_score);
-    sfText *score = sfText_create();
-    sfText_setFont(score, ui->font);
-    sfText_setCharacterSize(score, 26);
-    sfText_setFillColor(score, sfWhite);
-    sfText_setString(score, score_text);
-    sfFloatRect sb = sfText_getLocalBounds(score);
-    sfText_setPosition(
-        score,
-        (sfVector2f){(WINDOW_WIDTH - sb.width) / 2.f, 200.f}
-    );
-    sfRenderWindow_drawText(ui->window, score, NULL);
-    sfText_destroy(score);
-    float x = (WINDOW_WIDTH - 260.f) / 2.f;
-    float y = 300.f;
-    float spacing = 80.f;
-    ui->btn_menu = ui_draw_menu_button(ui, "MENU PRINCIPAL", x, y);
-    ui->btn_quit = ui_draw_menu_button(ui, "QUITTER", x, y + spacing);
+    float x = (WINDOW_WIDTH - 350.f) / 2.f;
+    float y = 180.f;
+    float spacing = 40.f;
+    for (int i = 0; i < (int)game->player_count; i++)
+    {
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer),
+                 "%s : %d",
+                 ui->config.player_names[i],
+                 game->players[i].score);
+        sfText *line = sfText_create();
+        sfText_setFont(line, ui->font);
+        sfText_setCharacterSize(line, 26);
+        if (i == winner)
+            sfText_setFillColor(line, sfColor_fromRGB(120, 255, 120));
+        else
+            sfText_setFillColor(line, sfWhite);
+        sfText_setString(line, buffer);
+        sfText_setPosition(line, (sfVector2f){x, y});
+        sfRenderWindow_drawText(ui->window, line, NULL);
+        sfText_destroy(line);
+        y += spacing;
+    }
+    char win_text[128];
+    snprintf(win_text, sizeof(win_text),
+             "Vainqueur : %s",
+             ui->config.player_names[winner]);
+    sfText *winner_text = sfText_create();
+    sfText_setFont(winner_text, ui->font);
+    sfText_setCharacterSize(winner_text, 28);
+    sfText_setFillColor(winner_text, sfWhite);
+    sfText_setString(winner_text, win_text);
+    sfFloatRect wb = sfText_getLocalBounds(winner_text);
+    sfText_setPosition(winner_text, (sfVector2f){(WINDOW_WIDTH - wb.width) / 2.f, y + 20.f});
+    sfRenderWindow_drawText(ui->window, winner_text, NULL);
+    sfText_destroy(winner_text);
+    float bx = (WINDOW_WIDTH - 260.f) / 2.f;
+    float by = WINDOW_HEIGHT - 180.f;
+    ui->btn_menu = ui_draw_menu_button(ui, "MENU PRINCIPAL", bx, by);
+    ui->btn_quit = ui_draw_menu_button(ui, "QUITTER", bx, by + 80.f);
     sfRenderWindow_display(ui->window);
 }
 
@@ -1010,9 +1026,8 @@ int main(void)
             snprintf(
                 buffer,
                 sizeof(buffer),
-                "Tour de l'IA : %s | Score : %d",
-                ui.config.player_names[game.current_player],
-                game.players[game.current_player].score
+                "Tour de l'IA : %s",
+                ui.config.player_names[game.current_player]
             );
             sfText_setString(text, buffer);
             sfText_setPosition(text, center);
