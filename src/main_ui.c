@@ -690,14 +690,12 @@ void ui_render_scores(UI *ui)
 
         y += 10.f;
     }
-
     ui->btn_back = ui_draw_menu_button(
         ui,
         "RETOUR",
         (WINDOW_WIDTH - 260)/2.f,
         WINDOW_HEIGHT - 120
     );
-
     sfRenderWindow_display(ui->window);
 }
 
@@ -790,6 +788,18 @@ int main(void)
                     sfRenderWindow_close(ui.window);
                 } else if (sfFloatRect_contains(&ui.menu_rule_bounds, mx, my)) {
                     ui.state = UI_STATE_RULE;
+                } else if (sfFloatRect_contains(&ui.menu_score_bounds, mx, my)) {
+                    ui.state = UI_STATE_SCORES;
+                }
+            }
+            if (ui.state == UI_STATE_SCORES &&
+                event.type == sfEvtMouseButtonPressed &&
+                event.mouseButton.button == sfMouseLeft)
+            {
+                float mx = event.mouseButton.x;
+                float my = event.mouseButton.y;
+                if (sfFloatRect_contains(&ui.btn_back, mx, my)) {
+                    ui.state = UI_STATE_MENU;
                 }
             }
             if (ui.state == UI_STATE_SETTING &&
