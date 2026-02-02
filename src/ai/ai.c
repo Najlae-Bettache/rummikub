@@ -2,6 +2,30 @@
 #include <string.h>
 #include <stdlib.h>
 
+static bool ai_try_extend_table(Game_t *game, GamePlayer_t *player)
+{
+    Table_t *table = &game->table;
+    for (size_t c = 0; c < table->count; c++)
+    {
+        Combination_t base = table->combinations[c];
+        for (int r = 0; r < player->rack.count; r++)
+        {
+            Tile_t t = player->rack.tiles[r];
+            Combination_t test = base;
+            combination_add_tile(&test, t);
+            RulesResult rr = rules_validate_combination(&test);
+            if (!rr.valid)
+                continue;
+
+            rack_remove_tile_by_id(&player->rack, t.id);
+            table->combinations[c] = test;
+            player->score += rr.score;
+            return true;
+        }
+    }
+    return false;
+}
+
 void ai_init(AIPlayer *ai, size_t player_id)
 {
     ai->player_id = player_id;
@@ -187,8 +211,7 @@ void ai_find_runs(
 bool ai_play_simple(AIPlayer *ai, Game_t *game)
 {
     (void)ai;
-    GamePlayer_t *player =
-        &game->players[game->current_player];
+    GamePlayer_t *player = &game->players[game->current_player];
     AIChoice best;
     memset(&best, 0, sizeof(best));
     best.ai_score = -1;
@@ -197,6 +220,11 @@ bool ai_play_simple(AIPlayer *ai, Game_t *game)
     if (best.ai_score >= 0) {
         game_action_play_combination(game, &best.combo);
         return true;
+    }
+    if (player->has_opened)
+    {
+        if (ai_try_extend_table(game, player))
+            return true;
     }
     game_action_draw(game);
     return false;

@@ -28,19 +28,15 @@ bool ui_init(UI *ui)
 {
     if (!ui)
         return false;
-
     sfVideoMode mode = {1280, 720, 32};
-
     ui->window = sfRenderWindow_create(
         mode,
         "Rummikub - CSFML",
         sfResize | sfClose,
         NULL
     );
-
     if (!ui->window)
         return false;
-
     ui->font = sfFont_createFromFile("./src/assets/font.TTF");
     if (!ui->font) {
         printf("Erreur : impossible de charger la police assets/font.TTF\n");
@@ -850,6 +846,7 @@ int main(void)
             {
                 float mouse_x = event.mouseButton.x;
                 float mouse_y = event.mouseButton.y;
+                bool hit = false;
                 if (mouse_x >= WINDOW_WIDTH - BUTTON_WIDTH - 40.f)
                 {
                 }
@@ -877,41 +874,45 @@ int main(void)
                                         .from_table = false
                                     };
                             }
+                            hit = true;
                             break;
                         }
                     }
                 }
-                float table_start_y = 100.f;
-                for (size_t c = 0; c < game.table.count; c++) {
-                    Combination_t *combo = &game.table.combinations[c];
-                    float y = table_start_y + c * (TILE_HEIGHT + 20.f) - ui.table_scroll_y;
-                    for (size_t t = 0; t < combo->count; t++) {
-                        float x = 50.f + t * (TILE_WIDTH + 5.f);
-                        if (mouse_x >= x && mouse_x <= x + TILE_WIDTH &&
-                            mouse_y >= y && mouse_y <= y + TILE_HEIGHT)
-                        {
-                            bool found = false;
-                            for (int s = 0; s < ui.selected_count; s++) {
-                                if (ui.selected_tiles[s].from_table &&
-                                    ui.selected_tiles[s].combo_i == (int)c &&
-                                    ui.selected_tiles[s].tile_i  == (int)t)
-                                {
-                                    ui_remove_selected(&ui, s);
-                                    found = true;
-                                    break;
+                if (!hit)
+                {
+                    float table_start_y = TABLE_START_Y;
+                    for (size_t c = 0; c < game.table.count; c++) {
+                        Combination_t *combo = &game.table.combinations[c];
+                        float y = table_start_y + c * (TILE_HEIGHT + 20.f) - ui.table_scroll_y;
+                        for (size_t t = 0; t < combo->count; t++) {
+                            float x = 50.f + t * (TILE_WIDTH + 5.f);
+                            if (mouse_x >= x && mouse_x <= x + TILE_WIDTH &&
+                                mouse_y >= y && mouse_y <= y + TILE_HEIGHT)
+                            {
+                                bool found = false;
+                                for (int s = 0; s < ui.selected_count; s++) {
+                                    if (ui.selected_tiles[s].from_table &&
+                                        ui.selected_tiles[s].combo_i == (int)c &&
+                                        ui.selected_tiles[s].tile_i  == (int)t)
+                                    {
+                                        ui_remove_selected(&ui, s);
+                                        found = true;
+                                        break;
+                                    }
                                 }
+                                if (!found) {
+                                    ui.selected_indices[ui.selected_count] = -1;
+                                    ui.selected_tiles[ui.selected_count++] =
+                                        (SelectedTile){
+                                            .tile = combo->tiles[t],
+                                            .from_table = true,
+                                            .combo_i = c,
+                                            .tile_i = t
+                                        };
+                                }
+                                break;
                             }
-                            if (!found) {
-                                ui.selected_indices[ui.selected_count] = -1;
-                                ui.selected_tiles[ui.selected_count++] =
-                                    (SelectedTile){
-                                        .tile = combo->tiles[t],
-                                        .from_table = true,
-                                        .combo_i = c,
-                                        .tile_i = t
-                                    };
-                            }
-                            break;
                         }
                     }
                 }
@@ -969,6 +970,12 @@ int main(void)
                         }
                     }
                     table_add_combination(&game.table, &combo);
+                    if (rack_is_empty(&player->rack))
+                    {
+                        ui.state = UI_STATE_END;
+                        game_compute_final_scores(&game);
+                        break;
+                    }
                     game_next_turn(&game);
                     ui.selected_count = 0;
                     continue;
@@ -1014,7 +1021,6 @@ int main(void)
             sfRenderWindow_display(ui.window);
             ai_play_simple(&(AIPlayer){game.current_player}, &game);
             sfSleep(sfMilliseconds(3000));
-
         }
     }
     ui_destroy(&ui);
